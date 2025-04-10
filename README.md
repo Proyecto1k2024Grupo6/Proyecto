@@ -5,6 +5,9 @@ Aquí tienes otros repositorios:
 - [Modelo de clases en Java](https://github.com/Proyecto1k2024Grupo6/Modelo-de-Clases-en-JAVA) 
 - [XML y Jason a Java](https://github.com/Proyecto1k2024Grupo6/XML-y-Jason-a-Java)
 
+## Usuario y Contraseña de la Base de Datos
+Usuario:admin
+Contraseña:admin1234
 ## Repartición del Trabajo
 
 Cada miembro del equipo se encargará de una parte específica del proyecto. 
