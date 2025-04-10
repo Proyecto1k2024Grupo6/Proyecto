@@ -7,9 +7,9 @@ import java.sql.Statement;
 
 public class DBConnection {
     // URL de conexión a la base de datos MySQL
-    private static final String URL = "jdbc:mysql://127.0.0.1:3306/login_schema";
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "1234";
+    private static final String URL = "jdbc:mysql://databaseproyecto.cakrctirtenk.us-east-1.rds.amazonaws.com:3306/grupo6";
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "admin1234";
 
     private static Connection connection;
 
