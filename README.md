@@ -7,7 +7,13 @@ Aquí tienes otros repositorios:
 
 ## Usuario y Contraseña de la Base de Datos
 Usuario:admin
+
 Contraseña:admin1234
+
+URL:databaseproyecto.cakrctirtenk.us-east-1.rds.amazonaws.com
+
+Puerto:3306
+
 ## Repartición del Trabajo
 
 Cada miembro del equipo se encargará de una parte específica del proyecto. 
