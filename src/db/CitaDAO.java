@@ -140,24 +140,25 @@ public class CitaDAO {
         return citas;
     }
 
-    public List<Cita> getCitasByPaciente(int sip) throws SQLException {
+    public List<Cita> getCitasByPaciente(String sip) throws SQLException {
         List<Cita> citas = new ArrayList<>();
-        String sql = "SELECT * FROM Cita WHERE sip_paciente = ?";
+        String sql = "SELECT * FROM Cita WHERE dniPaciente = (SELECT dni FROM Paciente WHERE sip = ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, sip);
+            statement.setString(1, sip);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 citas.add(new Cita(
                         resultSet.getInt("id"),
                         resultSet.getTimestamp("fechaHora").toLocalDateTime(),
                         resultSet.getString("motivo"),
-                        resultSet.getString("sip_paciente"),
-                        resultSet.getString("dni_doctor")
+                        resultSet.getString("dniPaciente"),
+                        resultSet.getString("dniDoctor")
                 ));
             }
         }
         return citas;
     }
+
 
     public int generarNuevoIdCita() throws SQLException {
         String sql = "SELECT MAX(id) FROM Cita";
