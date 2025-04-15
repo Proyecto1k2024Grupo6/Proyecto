@@ -52,7 +52,7 @@ public class DBConnection {
             }
         }
     }
-    // 👇 Este es tu método de prueba
+    /*// 👇 Este es tu método de prueba
     public static void main(String[] args) {
         Connection conn = getConnection();
 
@@ -71,7 +71,7 @@ public class DBConnection {
                 e.printStackTrace();
             } finally {
                 closeConnection();
-            }
-        }
-    }
+            }*/
+       //}
+    //}
 }

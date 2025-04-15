@@ -98,13 +98,41 @@ public class PacienteDAO {
      * @return Optional con el objeto Paciente si existe.
      * @throws SQLException Si ocurre un error de base de datos.
      */
-    public Optional<Paciente> getPacienteBySip(int sip) throws SQLException {
-        Optional<Paciente> paciente = Optional.empty();
-        try (PreparedStatement statement = connection.prepareStatement(SELECT_BY_SIP_QUERY)) {
-            statement.setInt(1, sip);
+    public Paciente getPacienteBySip(String sip) throws SQLException {
+        String sql = "SELECT * FROM PACIENTE WHERE sip = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, sip);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                paciente = Optional.of(resultSetToPaciente(resultSet));
+                return new Paciente(
+                        resultSet.getInt("sip"),
+                        resultSet.getString("nombre"),
+                        resultSet.getString("fnac"),
+                        resultSet.getString("telefono"),
+                        resultSet.getString("dni"),
+                        resultSet.getString("dni_doctor")
+                );
+            }
+        }
+        return null;
+    }
+    public Paciente getPacienteByDni(String dni) throws SQLException {
+        Paciente paciente = null;
+        String sql = "SELECT * FROM PACIENTE WHERE dni = ?";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, dni);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                paciente = new Paciente(
+                        rs.getInt("sip"),
+                        rs.getString("nombre"),
+                        rs.getString("fnac"),
+                        rs.getString("telefono"),
+                        rs.getString("dni"),
+                        rs.getString("dni_doctor")
+                );
             }
         }
         return paciente;

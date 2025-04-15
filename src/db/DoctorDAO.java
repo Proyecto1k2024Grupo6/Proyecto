@@ -90,23 +90,34 @@ public class DoctorDAO {
     }
 
     /**
-     * Obtiene un doctor a partir de su DNI.
+     * Obtiene un doctor a partir de su DNI .
      * @param dni Identificador único del doctor.
      * @return Objeto Doctor si se encuentra, null si no.
-     * @throws SQLException Si ocurre un error en la base de datos.
      */
-    public Optional<Doctor> getDoctorByDni(String dni) throws SQLException {
-        Optional<Doctor> doctor = Optional.empty();
+    public Doctor getDoctorByDniDirect(String dni) {
+        Doctor doctor = null;
         try (PreparedStatement statement = connection.prepareStatement(SELECT_BY_DNI_QUERY)) {
             statement.setString(1, dni);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                doctor = Optional.of(resultSetToDoctor(resultSet));
+                doctor = resultSetToDoctor(resultSet);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return doctor;
+    }
+    public Doctor getDoctorByDni(String dni) throws SQLException {
+        Doctor doctor = null;
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_BY_DNI_QUERY)) {
+            statement.setString(1, dni);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                doctor = resultSetToDoctor(resultSet);
             }
         }
         return doctor;
     }
-
     /**
      * Actualiza los datos de un doctor en la base de datos.
      * @param doctor Objeto Doctor con los datos actualizados.
@@ -145,8 +156,8 @@ public class DoctorDAO {
         return new Doctor(
                 resultSet.getString("dni"),
                 resultSet.getString("nombre"),
+                resultSet.getString("email"),
                 resultSet.getString("especialidad"),
-                resultSet.getString("telefono"),
-                resultSet.getString("email"));
+                resultSet.getString("telefono"));
     }
 }

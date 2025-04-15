@@ -1,48 +1,37 @@
 package app;
 
+import controller.ControllerDoctor;
+import controller.ControllerPaciente;
+
+import java.sql.SQLException;
+import java.util.Scanner;
+
 public class Main {
-    public static void main(String[] args) {
-        //VistaPersona vista = new VistaPersona();
-        ControllerPersona controlador = new ControllerPersona();
-        Scanner scanner = new Scanner(System.in);
+        public static void main(String[] args) throws SQLException {
+            Scanner scanner = new Scanner(System.in);
+            int opcion;
 
-        int opcion;
-        do {
-            System.out.println("Menú:");
-            System.out.println("1. Mostrar todas las personas");
-            System.out.println("2. Crear persona");
-            System.out.println("3. Actualizar persona");
-            System.out.println("4. Eliminar persona");
-            System.out.println("5. Mostrar persona por DNI");
-            System.out.println("6. Salir");
-            System.out.print("Elige una opción: ");
-            opcion = Integer.parseInt(scanner.nextLine());
+            do {
+                System.out.println("Menú Hospital");
+                System.out.println("1. Entrar como Doctor");//12345678A
+                System.out.println("2. Entrar como Paciente");//100000001
+                System.out.println("3. Salir");
+                System.out.print("Elige una opción: ");
+                opcion = Integer.parseInt(scanner.nextLine());
 
-            switch (opcion) {
-                case 1:
-                    controlador.mostrarTodasLasPersonas();
-                    break;
-                case 2:
-                    controlador.crearPersona();
-                    System.out.println("Persona creada correctamente.");
-                    break;
-                case 3:
-                    controlador.actualizarPersona();
-                    System.out.println("Persona actualizada correctamente.");
-                    break;
-                case 4:
-                    controlador.eliminarPersona();
-                    System.out.println("Persona eliminada correctamente.");
-                    break;
-                case 5:
-                    controlador.mostraPersonaDNI();
-                    break;
-                case 6:
-                    System.out.println("Saliendo...");
-                    break;
-                default:
-                    System.out.println("Opción no válida.");
-            }
-        } while (opcion != 6);
+                switch (opcion) {
+                    case 1:
+                        new ControllerDoctor().iniciarSesionDoctor();
+                        break;
+                    case 2:
+                        new ControllerPaciente().iniciarSesionPaciente();
+                        break;
+                    case 3:
+                        System.out.println("Saliendo del sistema...");
+                        break;
+                    default:
+                        System.out.println("Opción no válida.");
+                }
+            } while (opcion != 3);
+        }
     }
-}
