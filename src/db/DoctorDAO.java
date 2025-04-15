@@ -5,6 +5,7 @@ import model.Doctor;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Clase DoctorDAO, maneja las operaciones CRUD para la entidad Doctor.
@@ -13,83 +14,139 @@ import java.util.List;
  * @since 2025
  */
 public class DoctorDAO {
+
+    // Instancia única de DoctorDAO
+    private static DoctorDAO instance;
+    // Conexión a la base de datos
     private Connection connection;
 
+    // Sentencia SQL para crear la tabla Doctor si no existe
+    public static final String CREATE_TABLE_DOCTOR = """
+        CREATE TABLE IF NOT EXISTS DOCTOR (
+            dni VARCHAR(9) PRIMARY KEY,
+            nombre VARCHAR(100) NOT NULL,
+            especialidad VARCHAR(100) NOT NULL,
+            telefono VARCHAR(15),
+            email VARCHAR(100) UNIQUE
+        );
+    """;
+
+    // Consultas SQL predefinidas para operaciones CRUD
+    private static final String INSERT_QUERY = "INSERT INTO DOCTOR (dni, nombre, especialidad, telefono, email) VALUES (?, ?, ?, ?, ?)";
+    private static final String SELECT_ALL_QUERY = "SELECT * FROM DOCTOR";
+    private static final String SELECT_BY_DNI_QUERY = "SELECT * FROM DOCTOR WHERE dni = ?";
+    private static final String UPDATE_QUERY = "UPDATE DOCTOR SET nombre = ?, especialidad = ?, telefono = ?, email = ? WHERE dni = ?";
+    private static final String DELETE_QUERY = "DELETE FROM DOCTOR WHERE dni = ?";
+
     /**
-     * Constructor. Inicializa la conexión a la base de datos.
+     * Constructor privado para evitar instanciación externa.
+     * Obtiene la conexión a la base de datos desde DBConnection.
      */
-    public DoctorDAO() {
+    private DoctorDAO() {
         this.connection = DBConnection.getConnection();
     }
 
     /**
-     * Inserta un nuevo doctor en la base de datos.
-     * @param doctor Objeto Doctor que se desea insertar
-     * @throws SQLException Si ocurre un error al ejecutar la sentencia SQL
+     * Método estático para obtener la única instancia de DoctorDAO.
+     * @return instancia única de DoctorDAO.
      */
-    public void insertarDoctor(Doctor doctor) throws SQLException {
-        String sql = "INSERT INTO Doctor (dni, nombre, email, especialidad, telefono) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, doctor.getDni());
-            stmt.setString(2, doctor.getNombre());
-            stmt.setString(3, doctor.getEmail());
-            stmt.setString(4, doctor.getEspecialidad());
-            stmt.setString(5, doctor.getTelefono());
-            stmt.executeUpdate();
+    public static synchronized DoctorDAO getInstance() {
+        if (instance == null) {
+            instance = new DoctorDAO();
+        }
+        return instance;
+    }
+
+    /**
+     * Inserta un nuevo doctor en la base de datos.
+     * @param doctor Objeto Doctor a insertar.
+     * @throws SQLException Si ocurre un error en la base de datos.
+     */
+    public void insertDoctor(Doctor doctor) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_QUERY)) {
+            statement.setString(1, doctor.getDni());
+            statement.setString(2, doctor.getNombre());
+            statement.setString(3, doctor.getEspecialidad());
+            statement.setString(4, doctor.getTelefono());
+            statement.setString(5, doctor.getEmail());
+            statement.executeUpdate();
         }
     }
 
     /**
-     * Recupera todos los doctores de la base de datos.
-     * @return Lista de doctores
-     * @throws SQLException Si ocurre un error al ejecutar la consulta SQL
+     * Obtiene todos los doctores almacenados en la base de datos.
+     * @return Lista de objetos Doctor.
+     * @throws SQLException Si ocurre un error en la base de datos.
      */
-    public List<Doctor> obtenerTodosLosDoctores() throws SQLException {
-        List<Doctor> lista = new ArrayList<>();
-        String sql = "SELECT * FROM Doctor";
-        try (Statement stmt = connection.createStatement()) {
-            ResultSet rs = stmt.executeQuery(sql);
-            while (rs.next()) {
-                Doctor d = new Doctor(
-                        rs.getString("dni"),
-                        rs.getString("nombre"),
-                        rs.getString("email"),
-                        rs.getString("especialidad"),
-                        rs.getString("telefono")
-                );
-                lista.add(d);
+    public List<Doctor> getAllDoctors() throws SQLException {
+        List<Doctor> doctors = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_ALL_QUERY)) {
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                doctors.add(resultSetToDoctor(resultSet));
             }
         }
-        return lista;
+        return doctors;
     }
 
     /**
-     * Actualiza la información de un doctor existente.
-     * @param doctor Objeto Doctor con los nuevos datos
-     * @throws SQLException Si ocurre un error al ejecutar la sentencia SQL
+     * Obtiene un doctor a partir de su DNI.
+     * @param dni Identificador único del doctor.
+     * @return Objeto Doctor si se encuentra, null si no.
+     * @throws SQLException Si ocurre un error en la base de datos.
      */
-    public void actualizarDoctor(Doctor doctor) throws SQLException {
-        String sql = "UPDATE Doctor SET nombre = ?, email = ?, especialidad = ?, telefono = ? WHERE dni = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, doctor.getNombre());
-            stmt.setString(2, doctor.getEmail());
-            stmt.setString(3, doctor.getEspecialidad());
-            stmt.setString(4, doctor.getTelefono());
-            stmt.setString(5, doctor.getDni());
-            stmt.executeUpdate();
+    public Optional<Doctor> getDoctorByDni(String dni) throws SQLException {
+        Optional<Doctor> doctor = Optional.empty();
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_BY_DNI_QUERY)) {
+            statement.setString(1, dni);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                doctor = Optional.of(resultSetToDoctor(resultSet));
+            }
+        }
+        return doctor;
+    }
+
+    /**
+     * Actualiza los datos de un doctor en la base de datos.
+     * @param doctor Objeto Doctor con los datos actualizados.
+     * @throws SQLException Si ocurre un error en la base de datos.
+     */
+    public void updateDoctor(Doctor doctor) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_QUERY)) {
+            statement.setString(1, doctor.getNombre());
+            statement.setString(2, doctor.getEspecialidad());
+            statement.setString(3, doctor.getTelefono());
+            statement.setString(4, doctor.getEmail());
+            statement.setString(5, doctor.getDni());
+            statement.executeUpdate();
         }
     }
 
     /**
-     * Elimina un doctor de la base de datos según su DNI.
-     * @param dni DNI del doctor a eliminar
-     * @throws SQLException Si ocurre un error al ejecutar la sentencia SQL
+     * Elimina un doctor de la base de datos por su DNI.
+     * @param dni Identificador único del doctor a eliminar.
+     * @throws SQLException Si ocurre un error en la base de datos.
      */
-    public void eliminarDoctor(String dni) throws SQLException {
-        String sql = "DELETE FROM Doctor WHERE dni = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, dni);
-            stmt.executeUpdate();
+    public void deleteDoctorByDni(String dni) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_QUERY)) {
+            statement.setString(1, dni);
+            statement.executeUpdate();
         }
+    }
+
+    /**
+     * Convierte un ResultSet en un objeto Doctor.
+     * @param resultSet Resultado de la consulta SQL.
+     * @return Objeto Doctor con los datos del ResultSet.
+     * @throws SQLException Si ocurre un error en la conversión.
+     */
+    private Doctor resultSetToDoctor(ResultSet resultSet) throws SQLException {
+        return new Doctor(
+                resultSet.getString("dni"),
+                resultSet.getString("nombre"),
+                resultSet.getString("especialidad"),
+                resultSet.getString("telefono"),
+                resultSet.getString("email"));
     }
 }

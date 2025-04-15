@@ -16,79 +16,125 @@ import java.util.List;
  * @since 2025
  */
 public class HospitalizacionDAO {
+
+    // Instancia única de HospitalizacionDAO
+    private static HospitalizacionDAO instance;
+    // Conexión a la base de datos
     private Connection connection;
 
+    // Consultas SQL predefinidas para operaciones CRUD
+    private static final String INSERT_QUERY = "INSERT INTO Hospitalizacion (idHospitalizacion, dniPaciente, fechaIngreso, fechaAlta) VALUES (?, ?, ?, ?)";
+    private static final String SELECT_ALL_QUERY = "SELECT * FROM Hospitalizacion";
+    private static final String SELECT_BY_ID_QUERY = "SELECT * FROM Hospitalizacion WHERE idHospitalizacion = ?";
+    private static final String UPDATE_QUERY = "UPDATE Hospitalizacion SET dniPaciente = ?, fechaIngreso = ?, fechaAlta = ? WHERE idHospitalizacion = ?";
+    private static final String DELETE_QUERY = "DELETE FROM Hospitalizacion WHERE idHospitalizacion = ?";
+
     /**
-     * Constructor. Establece la conexión a la base de datos.
+     * Constructor privado para evitar instanciación externa.
+     * Obtiene la conexión a la base de datos desde DBConnection.
      */
-    public HospitalizacionDAO() {
+    private HospitalizacionDAO() {
         this.connection = DBConnection.getConnection();
     }
 
     /**
-     * Inserta una nueva hospitalización.
-     * @param h Objeto Hospitalizacion que se desea guardar
-     * @throws SQLException Si ocurre un error en la base de datos
+     * Método estático para obtener la única instancia de HospitalizacionDAO.
+     * @return instancia única de HospitalizacionDAO.
      */
-    public void insertar(Hospitalizacion h) throws SQLException {
-        String query = "INSERT INTO Hospitalizacion (idHospitalizacion, dniPaciente, fechaIngreso, fechaAlta) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, h.getIdHospitalizacion());
-            stmt.setString(2, h.getDniPaciente());
-            stmt.setDate(3, Date.valueOf(h.getFechaIngreso()));
-            stmt.setDate(4, Date.valueOf(h.getFechaAlta()));
-            stmt.executeUpdate();
+    public static synchronized HospitalizacionDAO getInstance() {
+        if (instance == null) {
+            instance = new HospitalizacionDAO();
+        }
+        return instance;
+    }
+
+    /**
+     * Inserta una nueva hospitalización en la base de datos.
+     * @param hospitalizacion Objeto Hospitalizacion que se desea insertar.
+     * @throws SQLException Si ocurre un error en la base de datos.
+     */
+    public void insertar(Hospitalizacion hospitalizacion) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_QUERY)) {
+            statement.setInt(1, hospitalizacion.getIdHospitalizacion());
+            statement.setString(2, hospitalizacion.getDniPaciente());
+            statement.setDate(3, Date.valueOf(hospitalizacion.getFechaIngreso()));
+            statement.setDate(4, Date.valueOf(hospitalizacion.getFechaAlta()));
+            statement.executeUpdate();
         }
     }
 
     /**
-     * Recupera todas las hospitalizaciones de la base de datos.
-     * @return Lista de hospitalizaciones
-     * @throws SQLException Si ocurre un error en la consulta
+     * Obtiene todas las hospitalizaciones registradas en la base de datos.
+     * @return Lista de objetos Hospitalizacion.
+     * @throws SQLException Si ocurre un error al ejecutar la consulta SQL.
      */
-    public List<Hospitalizacion> seleccionarTodas() throws SQLException {
-        List<Hospitalizacion> lista = new ArrayList<>();
-        String query = "SELECT * FROM Hospitalizacion";
-        try (PreparedStatement stmt = connection.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                lista.add(new Hospitalizacion(
-                        rs.getInt("idHospitalizacion"),
-                        rs.getString("dniPaciente"),
-                        rs.getDate("fechaIngreso").toLocalDate(),
-                        rs.getDate("fechaAlta").toLocalDate()
-                ));
+    public List<Hospitalizacion> obtenerTodasLasHospitalizaciones() throws SQLException {
+        List<Hospitalizacion> hospitalizaciones = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_ALL_QUERY)) {
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                hospitalizaciones.add(resultSetToHospitalizacion(resultSet));
             }
         }
-        return lista;
+        return hospitalizaciones;
     }
 
     /**
-     * Actualiza una hospitalización existente.
-     * @param h Objeto Hospitalizacion con los nuevos datos
-     * @throws SQLException Si ocurre un error al actualizar
+     * Obtiene una hospitalización a partir de su ID.
+     * @param id ID de la hospitalización.
+     * @return Objeto Hospitalizacion si se encuentra, null si no.
+     * @throws SQLException Si ocurre un error en la base de datos.
      */
-    public void actualizar(Hospitalizacion h) throws SQLException {
-        String query = "UPDATE Hospitalizacion SET dniPaciente = ?, fechaIngreso = ?, fechaAlta = ? WHERE idHospitalizacion = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, h.getDniPaciente());
-            stmt.setDate(2, Date.valueOf(h.getFechaIngreso()));
-            stmt.setDate(3, Date.valueOf(h.getFechaAlta()));
-            stmt.setInt(4, h.getIdHospitalizacion());
-            stmt.executeUpdate();
+    public Hospitalizacion obtenerHospitalizacionPorId(int id) throws SQLException {
+        Hospitalizacion hospitalizacion = null;
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_BY_ID_QUERY)) {
+            statement.setInt(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                hospitalizacion = resultSetToHospitalizacion(resultSet);
+            }
+        }
+        return hospitalizacion;
+    }
+
+    /**
+     * Actualiza los datos de una hospitalización en la base de datos.
+     * @param hospitalizacion Objeto Hospitalizacion con los datos actualizados.
+     * @throws SQLException Si ocurre un error en la base de datos.
+     */
+    public void actualizar(Hospitalizacion hospitalizacion) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_QUERY)) {
+            statement.setString(1, hospitalizacion.getDniPaciente());
+            statement.setDate(2, Date.valueOf(hospitalizacion.getFechaIngreso()));
+            statement.setDate(3, Date.valueOf(hospitalizacion.getFechaAlta()));
+            statement.setInt(4, hospitalizacion.getIdHospitalizacion());
+            statement.executeUpdate();
         }
     }
 
     /**
-     * Elimina una hospitalización por su ID.
-     * @param id ID de la hospitalización a eliminar
-     * @throws SQLException Si ocurre un error al eliminar
+     * Elimina una hospitalización de la base de datos por su ID.
+     * @param id ID de la hospitalización a eliminar.
+     * @throws SQLException Si ocurre un error en la base de datos.
      */
-    public void eliminar(int id) throws SQLException {
-        String query = "DELETE FROM Hospitalizacion WHERE idHospitalizacion = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
+    public void eliminarPorId(int id) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_QUERY)) {
+            statement.setInt(1, id);
+            statement.executeUpdate();
         }
+    }
+
+    /**
+     * Convierte un ResultSet en un objeto Hospitalizacion.
+     * @param resultSet Resultado de la consulta SQL.
+     * @return Objeto Hospitalizacion con los datos del ResultSet.
+     * @throws SQLException Si ocurre un error en la conversión.
+     */
+    private Hospitalizacion resultSetToHospitalizacion(ResultSet resultSet) throws SQLException {
+        return new Hospitalizacion(
+                resultSet.getInt("idHospitalizacion"),
+                resultSet.getString("dniPaciente"),
+                resultSet.getDate("fechaIngreso").toLocalDate(),
+                resultSet.getDate("fechaAlta").toLocalDate());
     }
 }
